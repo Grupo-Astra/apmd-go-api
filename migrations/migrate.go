@@ -13,7 +13,7 @@ func RunMigrations() {
 		NAME VARCHAR2(100) NOT NULL,
 		CURRENT_VALUE NUMBER(10,2) NOT NULL,
 		CURRENT_STATUS VARCHAR2(6) NOT NULL
-	);`
+	)`
 
 	_, err := config.DB.Exec(createSensorsTable)
 	if err != nil {
@@ -30,7 +30,7 @@ func RunMigrations() {
 		CONSTRAINT SENSOR_HISTORY_SENSORS_FK
 			FOREIGN KEY (SENSOR_ID)
 			REFERENCES SENSORS (SENSOR_ID)
-	);`
+	)`
 
 	_, err = config.DB.Exec(createSensorHistoryTable)
 	if err != nil {
