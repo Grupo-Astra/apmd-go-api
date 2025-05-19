@@ -1,18 +1,17 @@
 package main
 
 import (
+	"log"
+
 	"github.com/Grupo-Astra/apmd-go-api/database"
-	"github.com/Grupo-Astra/apmd-go-api/handlers"
-	"github.com/gin-gonic/gin"
+	"github.com/Grupo-Astra/apmd-go-api/routes"
 )
 
 func main() {
 	database.InitDatabase()
 
-	router := gin.Default()
+	router := routes.SetupRouter()
 
-	router.GET("/sensors", handlers.GetAllSensors)
-	router.GET("/sensors/:id", handlers.GetSensorByID)
-
+	log.Println("Servidor inicializado na porta :8080")
 	router.Run(":8080")
 }
