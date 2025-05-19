@@ -10,6 +10,7 @@ func SetupRouter() *gin.Engine {
 
 	r.GET("/sensors", handlers.GetAllSensors)
 	r.GET("/sensors/:id", handlers.GetSensorByID)
+	r.POST("/sensors", handlers.CreateSensor)
 
 	return r
 }

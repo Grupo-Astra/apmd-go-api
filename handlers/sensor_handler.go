@@ -5,11 +5,57 @@ import (
 	"encoding/hex"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/Grupo-Astra/apmd-go-api/config"
 	"github.com/Grupo-Astra/apmd-go-api/models"
 	"github.com/gin-gonic/gin"
 )
+
+func CreateSensor(c *gin.Context) {
+	var input models.Sensor
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "JSON inválido"})
+		return
+	}
+
+	status := strings.ToUpper(input.CurrentStatus)
+	if status != "OK" && status != "ALERTA" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Status deve ser 'OK' ou 'Alerta'"})
+		return
+	}
+
+	var sensorIDRaw []byte
+	insertSensorSQL := `
+		INSERT INTO SENSORS (SENSOR_ID, NAME, CURRENT_VALUE, CURRENT_STATUS)
+		VALUES (SYS_GUID(), :1, :2, :3)
+		RETURNING SENSOR_ID INTO :4
+	`
+
+	sensorIDRaw = make([]byte, 16)
+	_, err := config.DB.Exec(insertSensorSQL, input.Name, input.CurrentValue, status, &sensorIDRaw)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao inserir sensor"})
+		return
+	}
+
+	insertHistSQL := `
+		INSERT INTO SENSOR_HISTORY (SENSOR_HISTORY_ID, VALUE, STATUS, TIMESTAMP, SENSOR_ID)
+		VALUES (SYS_GUID(), :1, :2, CURRENT_TIMESTAMP, :3)
+	`
+
+	_, err = config.DB.Exec(insertHistSQL, input.CurrentValue, status, sensorIDRaw)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao inserir histórico"})
+		return
+	}
+
+	input.SensorID = hex.EncodeToString(sensorIDRaw)
+	input.CurrentStatus = status
+
+	c.JSON(http.StatusCreated, input)
+}
 
 func GetAllSensors(c *gin.Context) {
 	rows, err := config.DB.Query(
