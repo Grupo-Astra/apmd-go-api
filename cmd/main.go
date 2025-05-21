@@ -7,10 +7,17 @@ import (
 	"github.com/Grupo-Astra/apmd-go-api/database"
 	"github.com/Grupo-Astra/apmd-go-api/routes"
 	"github.com/Grupo-Astra/apmd-go-api/utils"
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
+	gin.SetMode(gin.ReleaseMode)
+
+	log.Println("Inicializando banco de dados...")
 	database.InitDatabase()
+
+	log.Println("Inicializando seeder do banco de dados...")
+	database.SeedSensors()
 
 	router := routes.SetupRouter()
 
