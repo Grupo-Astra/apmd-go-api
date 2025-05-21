@@ -1,13 +1,14 @@
-package utils
+package sensorutils
 
 import (
-	"log"
+	"fmt"
 	"math/rand"
 	"strings"
 	"time"
 
 	"github.com/Grupo-Astra/apmd-go-api/database"
 	"github.com/Grupo-Astra/apmd-go-api/models"
+	"github.com/Grupo-Astra/apmd-go-api/utils"
 )
 
 func UpdateSensorData(sensor *models.Sensor) error {
@@ -31,10 +32,13 @@ func UpdateSensorData(sensor *models.Sensor) error {
 		return err
 	}
 
-	log.Printf(
-		"Sensor %d (%s) atualizado:\n\tvalor=%.2f\tstatus=%s",
-		sensor.ID, sensor.Name, newValue, newStatus,
+	utils.LogInfo(
+		fmt.Sprintf(
+			"Sensor atualizado: [%s] valor=%.2f | status=%s",
+			sensor.Name, newValue, newStatus,
+		),
 	)
+
 	return nil
 }
 
