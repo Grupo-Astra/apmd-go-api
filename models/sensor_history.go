@@ -7,5 +7,5 @@ type SensorHistory struct {
 	Value     float64   `json:"value" gorm:"not null"`
 	Status    string    `json:"status" gorm:"not null"`
 	Timestamp time.Time `json:"timestamp" gorm:"autoCreateTime"`
-	SensorID  int       `json:"sensor_id" gorm:"not null;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	SensorID  int       `json:"sensorId" gorm:"not null;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 }
