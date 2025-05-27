@@ -20,9 +20,9 @@ func SetupRouter() *gin.Engine {
 		MaxAge:           12 * time.Hour,
 	}))
 
-	r.GET("/sensors", handlers.GetAllSensors)
-	r.GET("/sensors/:id", handlers.GetSensorByID)
-	r.POST("/sensors", handlers.CreateSensor)
+	r.GET("api/readings", handlers.GetAllSensors)
+	r.GET("api/readings/:id", handlers.GetSensorByID)
+	r.POST("api/readings", handlers.CreateSensor)
 
 	return r
 }
