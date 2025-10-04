@@ -27,7 +27,7 @@ func main() {
 
 	router := routes.SetupRouter(sensorRepository)
 
-	go sensorutils.StartSensorSimulation(5 * time.Second)
+	go sensorutils.StartSensorSimulation(sensorRepository, 5*time.Second)
 
 	log.Println("Servidor inicializado na porta :8080")
 	router.Run(":8080")

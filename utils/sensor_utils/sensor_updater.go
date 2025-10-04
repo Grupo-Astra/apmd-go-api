@@ -8,10 +8,11 @@ import (
 
 	"github.com/Grupo-Astra/apmd-go-api/database"
 	"github.com/Grupo-Astra/apmd-go-api/models"
+	"github.com/Grupo-Astra/apmd-go-api/repositories"
 	"github.com/Grupo-Astra/apmd-go-api/utils"
 )
 
-func UpdateSensorData(sensor *models.Sensor) error {
+func UpdateSensorData(repo repositories.SensorRepositoryInterface, sensor *models.Sensor) error {
 	newValue, newStatus := generateSensorReading(sensor.Name)
 
 	sensor.CurrentValue = newValue
@@ -28,7 +29,7 @@ func UpdateSensorData(sensor *models.Sensor) error {
 		SensorID:  sensor.ID,
 	}
 
-	if err := database.DB.Create(&history).Error; err != nil {
+	if err := repo.Update(sensor, &history); err != nil {
 		return err
 	}
 
