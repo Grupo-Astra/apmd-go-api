@@ -9,6 +9,8 @@ import (
 
 type SensorRepositoryInterface interface {
 	Create(sensor *models.Sensor, history *models.SensorHistory) error
+	FindAll() ([]models.Sensor, error)
+	FindByID(id int) (models.Sensor, error)
 }
 
 type sensorRepository struct {
@@ -68,4 +70,16 @@ func (r *sensorRepository) Create(sensor *models.Sensor, history *models.SensorH
 	}
 
 	return nil
+}
+
+func (r *sensorRepository) FindAll() ([]models.Sensor, error) {
+	var sensors []models.Sensor
+	err := r.postgresDB.Find(&sensors).Error
+	return sensors, err
+}
+
+func (r *sensorRepository) FindByID(id int) (models.Sensor, error) {
+	var sensor models.Sensor
+	err := r.postgresDB.Preload("Historic").First(&sensor, id).Error
+	return sensor, err
 }
