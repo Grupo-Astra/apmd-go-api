@@ -4,12 +4,15 @@ import (
 	"time"
 
 	"github.com/Grupo-Astra/apmd-go-api/handlers"
+	"github.com/Grupo-Astra/apmd-go-api/repositories"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRouter() *gin.Engine {
+func SetupRouter(sensorRepo repositories.SensorRepositoryInterface) *gin.Engine {
 	r := gin.Default()
+
+	sensorHandler := handlers.NewSensorHandler(sensorRepo)
 
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:8081"},
@@ -20,9 +23,12 @@ func SetupRouter() *gin.Engine {
 		MaxAge:           12 * time.Hour,
 	}))
 
-	r.GET("api/readings", handlers.GetAllSensors)
-	r.GET("api/readings/:id", handlers.GetSensorByID)
-	r.POST("api/readings", handlers.CreateSensor)
+	apiV1 := r.Group("/api")
+	{
+		apiV1.GET("api/readings", sensorHandler.GetAllSensors)
+		apiV1.GET("api/readings/:id", sensorHandler.GetSensorByID)
+		apiV1.POST("api/readings", sensorHandler.CreateSensor)
+	}
 
 	return r
 }

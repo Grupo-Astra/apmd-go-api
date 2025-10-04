@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/Grupo-Astra/apmd-go-api/database"
+	"github.com/Grupo-Astra/apmd-go-api/repositories"
 	"github.com/Grupo-Astra/apmd-go-api/routes"
 	sensorutils "github.com/Grupo-Astra/apmd-go-api/utils/sensor_utils"
 	"github.com/gin-gonic/gin"
@@ -16,10 +17,15 @@ func main() {
 	log.Println("Inicializando banco de dados...")
 	database.InitDatabase()
 
+	sensorRepository := repositories.NewSensorRepository(
+		database.PostgresDB,
+		database.DB,
+	)
+
 	log.Println("Inicializando seeder do banco de dados...")
 	database.SeedSensors()
 
-	router := routes.SetupRouter()
+	router := routes.SetupRouter(sensorRepository)
 
 	go sensorutils.StartSensorSimulation(5 * time.Second)
 

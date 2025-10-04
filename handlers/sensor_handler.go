@@ -2,14 +2,23 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
 	"time"
 
-	"github.com/Grupo-Astra/apmd-go-api/database"
 	"github.com/Grupo-Astra/apmd-go-api/models"
+	"github.com/Grupo-Astra/apmd-go-api/repositories"
 	"github.com/gin-gonic/gin"
 )
 
-func CreateSensor(c *gin.Context) {
+type SensorHandler struct {
+	repo repositories.SensorRepositoryInterface
+}
+
+func NewSensorHandler(repo repositories.SensorRepositoryInterface) *SensorHandler {
+	return &SensorHandler{repo: repo}
+}
+
+func (h *SensorHandler) CreateSensor(c *gin.Context) {
 	var sensor models.Sensor
 
 	if err := c.ShouldBindJSON(&sensor); err != nil {
@@ -17,41 +26,38 @@ func CreateSensor(c *gin.Context) {
 		return
 	}
 
-	if err := database.DB.Create(&sensor).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao criar sensor"})
-		return
-	}
-
 	history := models.SensorHistory{
 		Value:     sensor.CurrentValue,
 		Status:    sensor.CurrentStatus,
 		Timestamp: time.Now(),
-		SensorID:  sensor.ID,
 	}
 
-	if err := database.DB.Create(&history).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao criar histórico do sensor"})
+	if err := h.repo.Create(&sensor, &history); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao criar sensor"})
 		return
 	}
 
 	c.JSON(http.StatusCreated, sensor)
 }
 
-func GetAllSensors(c *gin.Context) {
-	var sensors []models.Sensor
-	if err := database.DB.Find(&sensors).Error; err != nil {
+func (h *SensorHandler) GetAllSensors(c *gin.Context) {
+	sensors, err := h.repo.FindAll()
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao buscar sensores"})
 		return
 	}
-
 	c.JSON(http.StatusOK, sensors)
 }
 
-func GetSensorByID(c *gin.Context) {
-	var sensor models.Sensor
-	id := c.Param("id")
+func (h *SensorHandler) GetSensorByID(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
+	}
 
-	if err := database.DB.Preload("Historic").First(&sensor, id).Error; err != nil {
+	sensor, err := h.repo.FindByID(id)
+	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Sensor não encontrado"})
 		return
 	}
