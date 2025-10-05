@@ -1,3 +1,5 @@
+// Package database gerencia a conexão com o banco
+// de dados e as migrações de schema
 package database
 
 import (
@@ -12,7 +14,10 @@ import (
 // PostgresDB é a instância global da conexão com o banco de dados.
 var PostgresDB *gorm.DB
 
-// InitDatabase inicializa a conexão com o banco de dados PostgreSQL e executa as migrações.
+// InitDatabase inicializa a conexão com o banco de dados PostgreSQL
+// e executa o AutoMigrate do GORM para garantir que o esquema esteja atualizado.
+//
+// A aplicação será encerrada se a conexão ou a migração falharem.
 func InitDatabase() {
 	var err error
 

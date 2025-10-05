@@ -1,3 +1,5 @@
+// Package routes é responsável pela configuração e definição
+// de todas as rotas da API.
 package routes
 
 import (
@@ -10,6 +12,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// SetupRouter configura o motor do Gin, atribui permissões de CORS,
+// agrupa as rotas e as associa aos seus respectivos handlers.
 func SetupRouter(
 	sensorRepo repositories.SensorRepositoryInterface,
 	userRepo repositories.UserRepositoryInterface,

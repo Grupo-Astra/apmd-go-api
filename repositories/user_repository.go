@@ -1,4 +1,5 @@
-// Package repositories contém as abstrações para acesso ao banco de dados.
+// Package repositories contém as abstrações para
+// acesso ao banco de dados, seguindo o Repository Pattern.
 package repositories
 
 import (
