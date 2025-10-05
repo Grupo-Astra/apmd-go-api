@@ -11,7 +11,7 @@ type SensorRepositoryInterface interface {
 	FindByID(id int) (models.Sensor, error)
 	Update(sensor *models.Sensor, history *models.SensorHistory) error
 	Count() (int64, error)
-	ClearAllData() error
+	ClearSensorData() error
 }
 
 type sensorRepository struct {
@@ -68,7 +68,8 @@ func (r *sensorRepository) Count() (int64, error) {
 	return count, err
 }
 
-func (r *sensorRepository) ClearAllData() error {
+// ClearSensorData remove todos os registros das tabelas de sensor e histórico.
+func (r *sensorRepository) ClearSensorData() error {
 	return r.postgresDB.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Exec("DELETE FROM sensor_histories").Error; err != nil {
 			return err

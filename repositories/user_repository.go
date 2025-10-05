@@ -9,11 +9,9 @@ import (
 // UserRepositoryInterface define o contrato para as operações de
 // usuários no banco de dados.
 type UserRepositoryInterface interface {
-	// Create cria um novo registro de usuário no banco de dados.
 	Create(user *models.User) error
-
-	// FindByUsername busca um usuário pelo seu nome de usuário.
 	FindByUsername(username string) (*models.User, error)
+	ClearAll() error
 }
 
 // userRepository é a implementação concreta da UserRepositoryInterface.
@@ -36,4 +34,9 @@ func (r *userRepository) FindByUsername(username string) (*models.User, error) {
 	var user models.User
 	err := r.db.Where("username = ?", username).First(&user).Error
 	return &user, err
+}
+
+// ClearAll remove todos os registros da tabela de usuários.
+func (r *userRepository) ClearAll() error {
+	return r.db.Exec("DELETE FROM users").Error
 }

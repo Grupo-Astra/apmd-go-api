@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/Grupo-Astra/apmd-go-api/handlers"
+	"github.com/Grupo-Astra/apmd-go-api/middleware"
 	"github.com/Grupo-Astra/apmd-go-api/repositories"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -15,7 +16,7 @@ func SetupRouter(
 ) *gin.Engine {
 	r := gin.Default()
 
-	sensorHandler := handlers.NewSensorHandler(sensorRepo)
+	sensorHandler := handlers.NewSensorHandler(sensorRepo, userRepo)
 	authHandler := handlers.NewAuthHandler(userRepo)
 
 	r.Use(cors.New(cors.Config{
@@ -27,24 +28,34 @@ func SetupRouter(
 		MaxAge:           12 * time.Hour,
 	}))
 
-	apiV1 := r.Group("/api")
+	api := r.Group("/api")
 	{
-		authRoutes := apiV1.Group("/auth")
+		authRoutes := api.Group("/auth")
 		{
 			authRoutes.POST("/register", authHandler.Register)
 			authRoutes.POST("/login", authHandler.Login)
 		}
 
-		readings := apiV1.Group("/readings")
+		// Legado -> rotas públicas
+		readingsV1 := api.Group("/readings")
 		{
-			readings.GET("", sensorHandler.GetAllSensors)
-			readings.GET("/:id", sensorHandler.GetSensorByID)
-			readings.POST("", sensorHandler.CreateSensor)
+			readingsV1.GET("", sensorHandler.GetAllSensors)
+			readingsV1.GET("/:id", sensorHandler.GetSensorByID)
+			readingsV1.POST("", sensorHandler.CreateSensor)
 		}
 
-		dbAdmin := apiV1.Group("/database")
+		dbAdmin := api.Group("/database")
 		{
 			dbAdmin.POST("/reset", sensorHandler.ResetAndSeedDatabase)
+		}
+
+		v2 := api.Group("/v2")
+		v2.Use(middleware.JWTAuthMiddleware())
+		{
+			readingsV2 := v2.Group("/readings")
+			readingsV2.GET("", sensorHandler.GetAllSensors)
+			readingsV2.GET("/:id", sensorHandler.GetSensorByID)
+			readingsV2.POST("", sensorHandler.CreateSensor)
 		}
 	}
 

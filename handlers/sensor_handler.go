@@ -12,11 +12,15 @@ import (
 )
 
 type SensorHandler struct {
-	repo repositories.SensorRepositoryInterface
+	repo     repositories.SensorRepositoryInterface
+	userRepo repositories.UserRepositoryInterface
 }
 
-func NewSensorHandler(repo repositories.SensorRepositoryInterface) *SensorHandler {
-	return &SensorHandler{repo: repo}
+func NewSensorHandler(
+	repo repositories.SensorRepositoryInterface,
+	userRepo repositories.UserRepositoryInterface,
+) *SensorHandler {
+	return &SensorHandler{repo: repo, userRepo: userRepo}
 }
 
 func (h *SensorHandler) CreateSensor(c *gin.Context) {
@@ -67,8 +71,19 @@ func (h *SensorHandler) GetSensorByID(c *gin.Context) {
 }
 
 func (h *SensorHandler) ResetAndSeedDatabase(c *gin.Context) {
-	if err := h.repo.ClearAllData(); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao limpar o banco de dados", "details": err.Error()})
+	if err := h.repo.ClearSensorData(); err != nil {
+		c.JSON(
+			http.StatusInternalServerError,
+			gin.H{"error": "Erro ao limpar dados de sensores", "details": err.Error()},
+		)
+		return
+	}
+
+	if err := h.userRepo.ClearAll(); err != nil {
+		c.JSON(
+			http.StatusInternalServerError,
+			gin.H{"error": "Erro ao limpar dados de usuários", "details": err.Error()},
+		)
 		return
 	}
 
