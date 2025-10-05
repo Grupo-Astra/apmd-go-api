@@ -5,22 +5,17 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Grupo-Astra/apmd-go-api/database"
 	"github.com/Grupo-Astra/apmd-go-api/models"
 	"github.com/Grupo-Astra/apmd-go-api/repositories"
 	"github.com/gin-gonic/gin"
 )
 
 type SensorHandler struct {
-	repo     repositories.SensorRepositoryInterface
-	userRepo repositories.UserRepositoryInterface
+	repo repositories.SensorRepositoryInterface
 }
 
-func NewSensorHandler(
-	repo repositories.SensorRepositoryInterface,
-	userRepo repositories.UserRepositoryInterface,
-) *SensorHandler {
-	return &SensorHandler{repo: repo, userRepo: userRepo}
+func NewSensorHandler(repo repositories.SensorRepositoryInterface) *SensorHandler {
+	return &SensorHandler{repo: repo}
 }
 
 func (h *SensorHandler) CreateSensor(c *gin.Context) {
@@ -68,26 +63,4 @@ func (h *SensorHandler) GetSensorByID(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, sensor)
-}
-
-func (h *SensorHandler) ResetAndSeedDatabase(c *gin.Context) {
-	if err := h.repo.ClearSensorData(); err != nil {
-		c.JSON(
-			http.StatusInternalServerError,
-			gin.H{"error": "Erro ao limpar dados de sensores", "details": err.Error()},
-		)
-		return
-	}
-
-	if err := h.userRepo.ClearAll(); err != nil {
-		c.JSON(
-			http.StatusInternalServerError,
-			gin.H{"error": "Erro ao limpar dados de usuários", "details": err.Error()},
-		)
-		return
-	}
-
-	database.SeedSensors(h.repo)
-
-	c.JSON(http.StatusOK, gin.H{"message": "Banco de dados resetado e populado com sucesso."})
 }

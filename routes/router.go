@@ -16,8 +16,9 @@ func SetupRouter(
 ) *gin.Engine {
 	r := gin.Default()
 
-	sensorHandler := handlers.NewSensorHandler(sensorRepo, userRepo)
+	sensorHandler := handlers.NewSensorHandler(sensorRepo)
 	authHandler := handlers.NewAuthHandler(userRepo)
+	databaseHandler := handlers.NewDatabaseAdminHandler(sensorRepo, userRepo)
 
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:8081"},
@@ -46,7 +47,7 @@ func SetupRouter(
 
 		dbAdmin := api.Group("/database")
 		{
-			dbAdmin.POST("/reset", sensorHandler.ResetAndSeedDatabase)
+			dbAdmin.POST("/reset", databaseHandler.ResetAndSeedDatabase)
 		}
 
 		v2 := api.Group("/v2")
