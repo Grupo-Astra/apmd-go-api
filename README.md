@@ -1,102 +1,89 @@
-# Advanced Programming & Mobile Dev - Sprint 2
+# Advanced Programming & Mobile Dev - Sprint 4
 
 ## Funcionamento
 
-É possível cadastrar sensores informando seu nome e os valores atuais lidos. Ao cadastrar
-o valor atual, a API cria uma entrada no histórico daquele sensor automaticamente.
+É possível cadastrar sensores informando seu nome e os valores atuais lidos.
+Ao cadastrar o valor atual, a API cria uma entrada no histórico daquele sensor automaticamente.
 
-A cada 5 segundos, por padrão, uma função executada em corrotina atualiza o
-valor de todos os sensores, simulando uma leitura real.
+A API utiliza **PostgreSQL** como banco de dados principal.
+
+A cada 5 segundos, por padrão, uma função executada em uma _goroutine_
+atualiza o valor de todos os sensores, simulando uma leitura real.
 Os novos dados também são salvos no histórico.
 
-É possível executar o programa de 3 formas:
+## Executando o Projeto (Recomendado)
 
-- Executando a função `main` como script
-- Compilando o programa e exectando o binário
-- Executar o contêiner Docker disponibilizado
+A maneira mais simples e recomendada de executar o projeto é utilizando o
+Docker Compose, que irá orquestrar tanto o contêiner da API quanto o
+do banco de dados PostgreSQL.
 
-## Executando o Projeto em Go
+### Pré-requisitos
 
-Caso tenha a linguagem Go instalada, a API pode ser executada das seguintes formas:
+- Docker
+- Docker Compose
 
-### Executar como Script
+### Execução
+
+1. Na raiz do projeto, execute o seguinte comando para construir as imagens
+   e iniciar os contêineres:
+
+   ```sh
+   docker-compose up --build
+   ```
+
+   A API estará disponível localmente em `http://localhost:8080`.
+
+2. Para parar e remover os contêineres e a rede criada, execute:
+
+   ```sh
+   docker-compose down
+   ```
+
+## Execução Manual (Para Desenvolvimento)
+
+Caso prefira executar os componentes manualmente para fins de desenvolvimento.
+
+### 1. Executar o Banco de Dados PostgreSQL
+
+Você pode executar um contêiner do PostgreSQL separadamente:
+
+```sh
+docker run --name apmd-postgres -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=password -e POSTGRES_DB=apmd_db -p 5432:5432 -d postgres:17.2-alpine
+```
+
+### 2. Executar a Aplicação Go
+
+Com o banco de dados em execução, você pode iniciar a API:
+
+**Exportar a variável de ambiente:**
+
+```sh
+export DATABASE_URL="postgres://postgres:password@localhost:5432/apmd_db?sslmode=disable"
+```
+
+**Executar como Script:**
 
 ```sh
 go run cmd/main.go
 ```
 
-Se estiver na raíz do projeto, o comando executará o arquivo `main` em forma de script.
-
-### Compilar e Executar o Binário
-
-Também é possível compilar o programa utilizando:
+**Compilar e Executar o Binário:**
 
 ```sh
+# Compilar
 go build -o api ./cmd
-```
 
-Se estiver na raíz do projeto, o comando compilará o código a
-partir do diretório `cmd`, gerando um arquivo `api` na raíz.
-
-Executar este arquivo inicializará a API.
-
-## Buildando e Executando o Container da API
-
-Caso não possua a Go instalado, foi disponibilizado um Dockerfile no diretório.
-
-### Build
-
-Monta o container com o nome `apmd-sprint2-api`:
-
-```sh
-docker build -t apmd-sprint2-api .
-```
-
-### Execução
-
-Executa o container, expondo a API na porta `8080`:
-
-```sh
-docker run -p 8080:8080 apmd-sprint2-api
-```
-
-### Listando Dockers
-
-Lista os contêineres em execução ou interrompidos:
-
-```sh
-docker ps -a
-```
-
-### Interrompendo Docker
-
-Interrompe o container com id `<id>`, que pode ser verificado com `docker ps`:
-
-```sh
-docker stop <id>
-```
-
-Ou interrompa todos os contêineres:
-
-```sh
-docker stop $(docker ps -q)
-```
-
-### Removendo Docker
-
-Remove um container interrompido de id `<id>`:
-
-```sh
-docker rm <id>
+# Executar
+./api
 ```
 
 ## Endpoints
 
 ### GET
 
-- `/api/readings`: retorna todos os sensores com seus valores atuais
+- `/api/readings`: Retorna todos os sensores com seus valores atuais.
 
-Em caso de sucesso, retorna o status 200 com um JSON do tipo:
+**Exemplo de Resposta (`/api/readings`)**
 
 ```JSON
 [
@@ -118,41 +105,41 @@ Em caso de sucesso, retorna o status 200 com um JSON do tipo:
 
 ```
 
-- `/api/readings/:id`: retorna o sensor com id `id`, se existir, junto de seu histórico
+- `/api/readings/:id`: Retorna o sensor com id `id`, se existir,
+  junto de seu histórico completo.
 
-Em caso de sucesso, retorna o status 200 com um JSON do tipo:
+**Exemplo de Resposta (`/api/readings/:id`)**
 
 ```JSON
 {
     "id": 1,
     "name": "Sensor de Pressão",
-    "currentValue": 7.996955905530946,
+    "currentValue": 7.99,
     "currentStatus": "Alerta",
     "historic": [
         {
             "id": 1,
             "value": 6.2,
             "status": "OK",
-            "timestamp": "2025-05-27T14:07:10.670382381-03:00",
+            "timestamp": "2025-10-04T23:30:10.670Z",
             "sensorId": 1
         },
         {
             "id": 6,
-            "value": 7.893647153211203,
+            "value": 7.99,
             "status": "Alerta",
-            "timestamp": "2025-05-27T14:07:10.706692438-03:00",
+            "timestamp": "2025-10-04T23:30:15.706Z",
             "sensorId": 1
         }
     ]
 }
-
 ```
 
 ### POST
 
-- `/api/readings`: cria um novo sensor, cadastrando seus valores atuais e seu histórico
+- `/api/readings`: Cria um novo sensor, cadastrando seus valores atuais e seu histórico.
 
-Recebe como pedido um JSON do tipo:
+**Exemplo de Requisição**
 
 ```JSON
 {
@@ -162,14 +149,32 @@ Recebe como pedido um JSON do tipo:
 }
 ```
 
-Em caso de sucesso, retorna o status 201 com o JSON:
+**Exemplo de Resposta (Status 201 Created)**
 
 ```JSON
 {
-    "id": 1,
+    "id": 6,
     "name": "Sensor de Temperatura",
-    "currentValue": 0,
-    "currentStatus": "",
+    "currentValue": 26.0,
+    "currentStatus": "OK",
     "historic": null
+}
+```
+
+- `/api/database/reset`: Endpoint administrativo para resetar o banco de dados.
+
+Esta ação:
+
+1. Limpa **todos** os dados das tabelas de sensores e históricos.
+2. Executa o "seeder" novamente para popular o banco com os dados iniciais.
+
+**Requisição**
+Não requer corpo (body).
+
+**Exemplo de Resposta (Status 200 OK)**
+
+```JSON
+{
+    "message": "Banco de dados resetado e populado com sucesso."
 }
 ```
