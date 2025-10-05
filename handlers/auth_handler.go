@@ -37,9 +37,15 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
+	hashedPassword, err := auth.HashPassword(req.Password)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao processar senha"})
+		return
+	}
+
 	newUser := models.User{
 		Username: req.Username,
-		Password: req.Password,
+		Password: hashedPassword,
 	}
 
 	if err := h.repo.Create(&newUser); err != nil {
