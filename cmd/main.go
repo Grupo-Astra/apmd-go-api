@@ -17,13 +17,12 @@ func main() {
 	utils.LogInfo("Inicializando banco de dados...")
 	database.InitDatabase()
 
-	sensorRepository := repositories.NewSensorRepository(
-		database.PostgresDB,
-	)
+	sensorRepository := repositories.NewSensorRepository(database.PostgresDB)
+	userRepository := repositories.NewUserRepository(database.PostgresDB)
 
 	database.SeedSensors(sensorRepository)
 
-	router := routes.SetupRouter(sensorRepository)
+	router := routes.SetupRouter(sensorRepository, userRepository)
 
 	go sensorutils.StartSensorSimulation(sensorRepository, 5*time.Second)
 
