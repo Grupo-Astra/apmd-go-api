@@ -9,8 +9,10 @@ import (
 	"gorm.io/gorm"
 )
 
+// PostgresDB é a instância global da conexão com o banco de dados.
 var PostgresDB *gorm.DB
 
+// InitDatabase inicializa a conexão com o banco de dados PostgreSQL e executa as migrações.
 func InitDatabase() {
 	var err error
 
@@ -26,7 +28,7 @@ func InitDatabase() {
 	utils.LogSuccess("Conexão com PostgresSQL estabelecida com sucesso.")
 
 	utils.LogInfo("Migrando tabelas para o PostgresSQL...")
-	err = PostgresDB.AutoMigrate(&models.Sensor{}, &models.SensorHistory{})
+	err = PostgresDB.AutoMigrate(&models.Sensor{}, &models.SensorHistory{}, &models.User{})
 	if err != nil {
 		utils.LogFatal("PostgresSQL - Erro ao migrar tabelas: " + err.Error())
 	}
