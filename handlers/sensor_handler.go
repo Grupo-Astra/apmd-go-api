@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/Grupo-Astra/apmd-go-api/database"
 	"github.com/Grupo-Astra/apmd-go-api/models"
 	"github.com/Grupo-Astra/apmd-go-api/repositories"
 	"github.com/gin-gonic/gin"
@@ -63,4 +64,15 @@ func (h *SensorHandler) GetSensorByID(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, sensor)
+}
+
+func (h *SensorHandler) ResetAndSeedDatabase(c *gin.Context) {
+	if err := h.repo.ClearAllData(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao limpar o banco de dados", "details": err.Error()})
+		return
+	}
+
+	database.SeedSensors(h.repo)
+
+	c.JSON(http.StatusOK, gin.H{"message": "Banco de dados resetado e populado com sucesso."})
 }

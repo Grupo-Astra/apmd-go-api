@@ -12,6 +12,8 @@ type SensorRepositoryInterface interface {
 	FindAll() ([]models.Sensor, error)
 	FindByID(id int) (models.Sensor, error)
 	Update(sensor *models.Sensor, history *models.SensorHistory) error
+	Count() (int64, error)
+	ClearAllData() error
 }
 
 type sensorRepository struct {
@@ -124,6 +126,49 @@ func (r *sensorRepository) Update(sensor *models.Sensor, history *models.SensorH
 	}
 	if err := txSqlite.Commit().Error; err != nil {
 		log.Printf("CRITICAL: Falha ao commitar transação no SQLite após sucesso no PostgreSQL: %v", err)
+		return err
+	}
+
+	return nil
+}
+
+func (r *sensorRepository) Count() (int64, error) {
+	var count int64
+	err := r.postgresDB.Model(&models.Sensor{}).Count(&count).Error
+	return count, err
+}
+
+func (r *sensorRepository) ClearAllData() error {
+	txPostgres := r.postgresDB.Begin()
+	txSqlite := r.sqliteDB.Begin()
+
+	if err := txPostgres.Exec("DELETE FROM sensor_histories").Error; err != nil {
+		txPostgres.Rollback()
+		txSqlite.Rollback()
+		return err
+	}
+	if err := txPostgres.Exec("DELETE FROM sensors").Error; err != nil {
+		txPostgres.Rollback()
+		txSqlite.Rollback()
+		return err
+	}
+
+	if err := txSqlite.Exec("DELETE FROM sensor_histories").Error; err != nil {
+		txPostgres.Rollback()
+		txSqlite.Rollback()
+		return err
+	}
+	if err := txSqlite.Exec("DELETE FROM sensors").Error; err != nil {
+		txPostgres.Rollback()
+		txSqlite.Rollback()
+		return err
+	}
+
+	if err := txPostgres.Commit().Error; err != nil {
+		return err
+	}
+	if err := txSqlite.Commit().Error; err != nil {
+		log.Printf("CRÍTICO: Falha ao commitar limpeza no SQLite após sucesso no PostgreSQL: %v", err)
 		return err
 	}
 

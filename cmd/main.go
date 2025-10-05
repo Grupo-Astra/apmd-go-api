@@ -23,7 +23,7 @@ func main() {
 	)
 
 	log.Println("Inicializando seeder do banco de dados...")
-	database.SeedSensors()
+	database.SeedSensors(sensorRepository)
 
 	router := routes.SetupRouter(sensorRepository)
 

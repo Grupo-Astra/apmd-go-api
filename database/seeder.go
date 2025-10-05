@@ -2,14 +2,15 @@ package database
 
 import (
 	"github.com/Grupo-Astra/apmd-go-api/models"
+	"github.com/Grupo-Astra/apmd-go-api/repositories"
 	"github.com/Grupo-Astra/apmd-go-api/utils"
 )
 
-func SeedSensors() {
+func SeedSensors(repo repositories.SensorRepositoryInterface) {
 	utils.LogSection("Seeder de Sensores")
 
-	var count int64
-	if err := DB.Model(&models.Sensor{}).Count(&count).Error; err != nil {
+	count, err := repo.Count()
+	if err != nil {
 		utils.LogError("Erro ao verificar sensorse: " + err.Error())
 		return
 	}
@@ -48,23 +49,14 @@ func SeedSensors() {
 	}
 
 	for _, sensor := range sensors {
-		if err := DB.Create(&sensor).Error; err != nil {
-			utils.LogError("Erro ao inserir sensor: " + err.Error())
-			return
-		}
-
 		history := models.SensorHistory{
-			Value:    sensor.CurrentValue,
-			Status:   sensor.CurrentStatus,
-			SensorID: sensor.ID,
+			Value:  sensor.CurrentValue,
+			Status: sensor.CurrentStatus,
 		}
 
-		if err := DB.Create(&history).Error; err != nil {
-			utils.LogError(
-				"Erro ao inserir histórico inicial para " +
-					sensor.Name + ": " + err.Error(),
-			)
-			continue
+		if err := repo.Create(&sensor, &history); err != nil {
+			utils.LogError("Erro ao inserir sensor '" + sensor.Name + "': " + err.Error())
+			return
 		}
 
 		utils.LogSuccess("Sensor criado: " + sensor.Name)

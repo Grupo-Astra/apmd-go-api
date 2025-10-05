@@ -25,9 +25,17 @@ func SetupRouter(sensorRepo repositories.SensorRepositoryInterface) *gin.Engine 
 
 	apiV1 := r.Group("/api")
 	{
-		apiV1.GET("api/readings", sensorHandler.GetAllSensors)
-		apiV1.GET("api/readings/:id", sensorHandler.GetSensorByID)
-		apiV1.POST("api/readings", sensorHandler.CreateSensor)
+		readings := apiV1.Group("/readings")
+		{
+			readings.GET("", sensorHandler.GetAllSensors)
+			readings.GET("/:id", sensorHandler.GetSensorByID)
+			readings.POST("", sensorHandler.CreateSensor)
+		}
+
+		dbAdmin := apiV1.Group("/database")
+		{
+			dbAdmin.POST("/reset", sensorHandler.ResetAndSeedDatabase)
+		}
 	}
 
 	return r
