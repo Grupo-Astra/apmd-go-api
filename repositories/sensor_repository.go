@@ -1,9 +1,10 @@
 package repositories
 
 import (
-	"log"
+	"fmt"
 
 	"github.com/Grupo-Astra/apmd-go-api/models"
+	"github.com/Grupo-Astra/apmd-go-api/utils"
 	"gorm.io/gorm"
 )
 
@@ -36,7 +37,7 @@ func (r *sensorRepository) Create(sensor *models.Sensor, history *models.SensorH
 		if r := recover(); r != nil {
 			txPostgres.Rollback()
 			txSqlite.Rollback()
-			log.Println("Pane recuperada, transações revertidas: ", r)
+			utils.LogWarn(fmt.Sprintf("Pane recuperada, transações revertidas: ", r))
 		}
 	}()
 
@@ -68,7 +69,12 @@ func (r *sensorRepository) Create(sensor *models.Sensor, history *models.SensorH
 		return err
 	}
 	if err := txSqlite.Commit().Error; err != nil {
-		log.Printf("CRÍTICO: Falha ao commitar transação no SQLite após sucesso no PostgreSQL: %v", err)
+		utils.LogError(
+			fmt.Sprintf(
+				"CRÍTICO: Falha ao commitar transação no SQLite após sucesso no PostgreSQL: %v",
+				err,
+			),
+		)
 		return err
 	}
 
@@ -125,7 +131,12 @@ func (r *sensorRepository) Update(sensor *models.Sensor, history *models.SensorH
 		return err
 	}
 	if err := txSqlite.Commit().Error; err != nil {
-		log.Printf("CRITICAL: Falha ao commitar transação no SQLite após sucesso no PostgreSQL: %v", err)
+		utils.LogError(
+			fmt.Sprintf(
+				"CRITICAL: Falha ao commitar transação no SQLite após sucesso no PostgreSQL: %v",
+				err,
+			),
+		)
 		return err
 	}
 
@@ -168,7 +179,12 @@ func (r *sensorRepository) ClearAllData() error {
 		return err
 	}
 	if err := txSqlite.Commit().Error; err != nil {
-		log.Printf("CRÍTICO: Falha ao commitar limpeza no SQLite após sucesso no PostgreSQL: %v", err)
+		utils.LogError(
+			fmt.Sprintf(
+				"CRÍTICO: Falha ao commitar limpeza no SQLite após sucesso no PostgreSQL: %v",
+				err,
+			),
+		)
 		return err
 	}
 

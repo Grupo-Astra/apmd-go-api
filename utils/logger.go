@@ -1,6 +1,9 @@
 package utils
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+)
 
 const (
 	colorReset  = "\033[0m"
@@ -29,4 +32,9 @@ func LogError(msg string) {
 
 func LogSection(title string) {
 	fmt.Println(colorBlue + "=== " + title + " ===" + colorReset)
+}
+
+func LogFatal(msg string) {
+	fmt.Println(colorRed + "[FATAL] " + colorReset + msg)
+	os.Exit(1)
 }
