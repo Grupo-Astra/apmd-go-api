@@ -3,12 +3,14 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/Grupo-Astra/apmd-go-api/auth"
 	"github.com/Grupo-Astra/apmd-go-api/models"
 	"github.com/Grupo-Astra/apmd-go-api/repositories"
 	"github.com/gin-gonic/gin"
+	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
 
@@ -49,7 +51,13 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	}
 
 	if err := h.repo.Create(&newUser); err != nil {
-		// TODO: Adicionar tratamento específico para usuário duplicado
+		var pqErr *pq.Error
+		const PG_UNIQUE_CONSTRAINT_VIOLATION string = "23505"
+		if errors.As(err, &pqErr) && pqErr.Code == pq.ErrorCode(PG_UNIQUE_CONSTRAINT_VIOLATION) {
+			c.JSON(http.StatusConflict, gin.H{"error": "Nome de usuário já existe"})
+			return
+		}
+
 		c.JSON(
 			http.StatusInternalServerError,
 			gin.H{"error": "Não foi possível criar o usuário"},
