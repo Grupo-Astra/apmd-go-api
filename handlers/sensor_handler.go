@@ -1,3 +1,4 @@
+// Package handlers é responsável por processar as requisições HTTP e retornar as respostas.
 package handlers
 
 import (
@@ -5,20 +6,24 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Grupo-Astra/apmd-go-api/database"
 	"github.com/Grupo-Astra/apmd-go-api/models"
 	"github.com/Grupo-Astra/apmd-go-api/repositories"
 	"github.com/gin-gonic/gin"
 )
 
+// SensorHandler gerencia as requisições HTTP relacionadas aos sensores.
 type SensorHandler struct {
 	repo repositories.SensorRepositoryInterface
 }
 
+// NewSensorHandler cria uma nova instância do SensorHandler com suas dependências.
 func NewSensorHandler(repo repositories.SensorRepositoryInterface) *SensorHandler {
 	return &SensorHandler{repo: repo}
 }
 
+// CreateSensor processa a requisição para criar um novo sensor.
+//
+// Espera um JSON com os dados do sensor no corpo da requisição.
 func (h *SensorHandler) CreateSensor(c *gin.Context) {
 	var sensor models.Sensor
 
@@ -41,6 +46,7 @@ func (h *SensorHandler) CreateSensor(c *gin.Context) {
 	c.JSON(http.StatusCreated, sensor)
 }
 
+// GetAllSensors processa a requisição para buscar todos os sensores cadastrados.
 func (h *SensorHandler) GetAllSensors(c *gin.Context) {
 	sensors, err := h.repo.FindAll()
 	if err != nil {
@@ -50,6 +56,8 @@ func (h *SensorHandler) GetAllSensors(c *gin.Context) {
 	c.JSON(http.StatusOK, sensors)
 }
 
+// GetSensorByID processa a requisição para buscar um sensor específico
+// pelo ID fornecido na URL.
 func (h *SensorHandler) GetSensorByID(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
@@ -64,15 +72,4 @@ func (h *SensorHandler) GetSensorByID(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, sensor)
-}
-
-func (h *SensorHandler) ResetAndSeedDatabase(c *gin.Context) {
-	if err := h.repo.ClearAllData(); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao limpar o banco de dados", "details": err.Error()})
-		return
-	}
-
-	database.SeedSensors(h.repo)
-
-	c.JSON(http.StatusOK, gin.H{"message": "Banco de dados resetado e populado com sucesso."})
 }

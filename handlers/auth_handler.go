@@ -1,0 +1,120 @@
+// Package handlers é responsável por processar as requisições
+// HTTP e retornar as respostas.
+package handlers
+
+import (
+	"errors"
+	"fmt"
+	"net/http"
+
+	"github.com/Grupo-Astra/apmd-go-api/auth"
+	"github.com/Grupo-Astra/apmd-go-api/models"
+	"github.com/Grupo-Astra/apmd-go-api/repositories"
+	"github.com/Grupo-Astra/apmd-go-api/utils"
+	"github.com/gin-gonic/gin"
+	"github.com/lib/pq"
+)
+
+// AuthRequest define a estrutura esperada para uma requisição
+// de login e registro.
+type AuthRequest struct {
+	Username string `json:"username" binding:"required"`
+	Password string `json:"password" binding:"required"`
+}
+
+// AuthHandler gerencia a lógica para as rotas de autenticação.
+type AuthHandler struct {
+	repo repositories.UserRepositoryInterface
+}
+
+// NewAuthHandler cria uma nova instância de AuthHandler com suas dependências.
+func NewAuthHandler(repo repositories.UserRepositoryInterface) *AuthHandler {
+	return &AuthHandler{repo: repo}
+}
+
+// Register processa a requisição de registro de um novo usuário.
+func (h *AuthHandler) Register(c *gin.Context) {
+	var req AuthRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Requisição inválida"})
+		return
+	}
+
+	hashedPassword, err := auth.HashPassword(req.Password)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao processar senha"})
+		return
+	}
+
+	newUser := models.User{
+		Username: req.Username,
+		Password: hashedPassword,
+	}
+
+	if err := h.repo.Create(&newUser); err != nil {
+		var pqErr *pq.Error
+		const PG_UNIQUE_CONSTRAINT_VIOLATION string = "23505"
+		if errors.As(err, &pqErr) && pqErr.Code == pq.ErrorCode(PG_UNIQUE_CONSTRAINT_VIOLATION) {
+			utils.LogWarn(fmt.Sprintf("Falha ao registrar usuário duplicado: %s", req.Username))
+			c.JSON(http.StatusConflict, gin.H{"error": "Nome de usuário já existe"})
+			return
+		}
+
+		utils.LogError("Erro de banco de dados ao criar usuário: " + err.Error())
+		c.JSON(
+			http.StatusInternalServerError,
+			gin.H{"error": "Não foi possível criar o usuário"},
+		)
+		return
+	}
+
+	utils.LogSuccess(fmt.Sprintf("Novo usuário registrado: %s", newUser.Username))
+	c.JSON(http.StatusCreated, gin.H{"message": "Usuário criado com sucesso"})
+}
+
+// Login processa a requisição de login e retorna um token JWT
+// se as credenciais forem válidas.
+func (h *AuthHandler) Login(c *gin.Context) {
+	var req AuthRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Requisição inválida"})
+		return
+	}
+
+	user, err := h.repo.FindByUsername(req.Username)
+	if err != nil {
+		utils.LogWarn(fmt.Sprintf(
+			"Tentativa de login falhou para usuário inexistente: %s",
+			req.Username,
+		))
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Credenciais inválidas"})
+		return
+	}
+
+	if !auth.CheckPasswordHash(req.Password, user.Password) {
+		utils.LogWarn(fmt.Sprintf(
+			"Tentativa de login com senha incorreta para o usuário: %s",
+			user.Username,
+		))
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Credenciais inválidas"})
+		return
+	}
+
+	token, err := auth.GenerateToken(user.ID)
+	if err != nil {
+		utils.LogError(
+			"Erro ao gerar token JWT para o usuário " + user.Username + ": " + err.Error(),
+		)
+		c.JSON(
+			http.StatusInternalServerError,
+			gin.H{"error": "Não foi possível gerar o token"},
+		)
+		return
+	}
+
+	utils.LogInfo(fmt.Sprintf(
+		"Usuário '%s' logado com sucesso.",
+		user.Username,
+	))
+	c.JSON(http.StatusOK, gin.H{"token": token})
+}

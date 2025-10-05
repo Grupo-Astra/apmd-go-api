@@ -1,3 +1,5 @@
+// Package database gerencia a conexão com o banco
+// de dados e as migrações de schema
 package database
 
 import (
@@ -6,6 +8,11 @@ import (
 	"github.com/Grupo-Astra/apmd-go-api/utils"
 )
 
+// SeedSensors popula o banco de dados com um conjunto inicial de sensores.
+//
+// A função verifica se já existem sensores antes de executar para evitar duplicação.
+//
+// Requer uma instância do repositório de sensores para interagir com o banco de dados.
 func SeedSensors(repo repositories.SensorRepositoryInterface) {
 	utils.LogSection("Seeder de Sensores")
 

@@ -1,3 +1,5 @@
+// Package sensorutils contém a lógica relacionada à
+// simulação de dados de sensores.
 package sensorutils
 
 import (
@@ -6,21 +8,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Grupo-Astra/apmd-go-api/database"
 	"github.com/Grupo-Astra/apmd-go-api/models"
 	"github.com/Grupo-Astra/apmd-go-api/repositories"
 	"github.com/Grupo-Astra/apmd-go-api/utils"
 )
 
+// UpdateSensorData gera novos valores para um sensor, atualiza seu estado no banco de dados
+// e cria um novo registro de histórico através do repositório.
 func UpdateSensorData(repo repositories.SensorRepositoryInterface, sensor *models.Sensor) error {
 	newValue, newStatus := generateSensorReading(sensor.Name)
 
 	sensor.CurrentValue = newValue
 	sensor.CurrentStatus = newStatus
-
-	if err := database.DB.Save(sensor).Error; err != nil {
-		return err
-	}
 
 	history := models.SensorHistory{
 		Value:     newValue,
