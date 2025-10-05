@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Grupo-Astra/apmd-go-api/database"
 	"github.com/Grupo-Astra/apmd-go-api/models"
 	"github.com/Grupo-Astra/apmd-go-api/repositories"
 	"github.com/Grupo-Astra/apmd-go-api/utils"
@@ -17,10 +16,6 @@ func UpdateSensorData(repo repositories.SensorRepositoryInterface, sensor *model
 
 	sensor.CurrentValue = newValue
 	sensor.CurrentStatus = newStatus
-
-	if err := database.DB.Save(sensor).Error; err != nil {
-		return err
-	}
 
 	history := models.SensorHistory{
 		Value:     newValue,
