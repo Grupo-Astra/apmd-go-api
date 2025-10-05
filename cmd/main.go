@@ -19,7 +19,6 @@ func main() {
 
 	sensorRepository := repositories.NewSensorRepository(
 		database.PostgresDB,
-		database.DB,
 	)
 
 	database.SeedSensors(sensorRepository)

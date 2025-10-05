@@ -1,10 +1,7 @@
 package repositories
 
 import (
-	"fmt"
-
 	"github.com/Grupo-Astra/apmd-go-api/models"
-	"github.com/Grupo-Astra/apmd-go-api/utils"
 	"gorm.io/gorm"
 )
 
@@ -19,66 +16,25 @@ type SensorRepositoryInterface interface {
 
 type sensorRepository struct {
 	postgresDB *gorm.DB
-	sqliteDB   *gorm.DB
 }
 
-func NewSensorRepository(postgres *gorm.DB, sqlite *gorm.DB) SensorRepositoryInterface {
+func NewSensorRepository(postgres *gorm.DB) SensorRepositoryInterface {
 	return &sensorRepository{
 		postgresDB: postgres,
-		sqliteDB:   sqlite,
 	}
 }
 
 func (r *sensorRepository) Create(sensor *models.Sensor, history *models.SensorHistory) error {
-	txPostgres := r.postgresDB.Begin()
-	txSqlite := r.sqliteDB.Begin()
-
-	defer func() {
-		if r := recover(); r != nil {
-			txPostgres.Rollback()
-			txSqlite.Rollback()
-			utils.LogWarn(fmt.Sprintf("Pane recuperada, transações revertidas: ", r))
+	return r.postgresDB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(sensor).Error; err != nil {
+			return err
 		}
-	}()
-
-	if err := txPostgres.Create(sensor).Error; err != nil {
-		txPostgres.Rollback()
-		txSqlite.Rollback()
-		return err
-	}
-
-	history.SensorID = sensor.ID
-	if err := txPostgres.Create(history).Error; err != nil {
-		txPostgres.Rollback()
-		txSqlite.Rollback()
-		return err
-	}
-
-	if err := txSqlite.Create(sensor).Error; err != nil {
-		txPostgres.Rollback()
-		txSqlite.Rollback()
-		return err
-	}
-	if err := txSqlite.Create(history).Error; err != nil {
-		txPostgres.Rollback()
-		txSqlite.Rollback()
-		return err
-	}
-
-	if err := txPostgres.Commit().Error; err != nil {
-		return err
-	}
-	if err := txSqlite.Commit().Error; err != nil {
-		utils.LogError(
-			fmt.Sprintf(
-				"CRÍTICO: Falha ao commitar transação no SQLite após sucesso no PostgreSQL: %v",
-				err,
-			),
-		)
-		return err
-	}
-
-	return nil
+		history.SensorID = sensor.ID
+		if err := tx.Create(history).Error; err != nil {
+			return err
+		}
+		return nil
+	})
 }
 
 func (r *sensorRepository) FindAll() ([]models.Sensor, error) {
@@ -94,53 +50,16 @@ func (r *sensorRepository) FindByID(id int) (models.Sensor, error) {
 }
 
 func (r *sensorRepository) Update(sensor *models.Sensor, history *models.SensorHistory) error {
-	txPostgres := r.postgresDB.Begin()
-	txSqlite := r.sqliteDB.Begin()
-
-	defer func() {
-		if r := recover(); r != nil {
-			txPostgres.Rollback()
-			txSqlite.Rollback()
+	return r.postgresDB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Save(sensor).Error; err != nil {
+			return err
 		}
-	}()
-
-	if err := txPostgres.Save(sensor).Error; err != nil {
-		txPostgres.Rollback()
-		txSqlite.Rollback()
-		return err
-	}
-	if err := txSqlite.Save(sensor).Error; err != nil {
-		txPostgres.Rollback()
-		txSqlite.Rollback()
-		return err
-	}
-
-	history.SensorID = sensor.ID
-	if err := txPostgres.Create(history).Error; err != nil {
-		txPostgres.Rollback()
-		txSqlite.Rollback()
-		return err
-	}
-	if err := txSqlite.Create(history).Error; err != nil {
-		txPostgres.Rollback()
-		txSqlite.Rollback()
-		return err
-	}
-
-	if err := txPostgres.Commit().Error; err != nil {
-		return err
-	}
-	if err := txSqlite.Commit().Error; err != nil {
-		utils.LogError(
-			fmt.Sprintf(
-				"CRITICAL: Falha ao commitar transação no SQLite após sucesso no PostgreSQL: %v",
-				err,
-			),
-		)
-		return err
-	}
-
-	return nil
+		history.SensorID = sensor.ID
+		if err := tx.Create(history).Error; err != nil {
+			return err
+		}
+		return nil
+	})
 }
 
 func (r *sensorRepository) Count() (int64, error) {
@@ -150,43 +69,13 @@ func (r *sensorRepository) Count() (int64, error) {
 }
 
 func (r *sensorRepository) ClearAllData() error {
-	txPostgres := r.postgresDB.Begin()
-	txSqlite := r.sqliteDB.Begin()
-
-	if err := txPostgres.Exec("DELETE FROM sensor_histories").Error; err != nil {
-		txPostgres.Rollback()
-		txSqlite.Rollback()
-		return err
-	}
-	if err := txPostgres.Exec("DELETE FROM sensors").Error; err != nil {
-		txPostgres.Rollback()
-		txSqlite.Rollback()
-		return err
-	}
-
-	if err := txSqlite.Exec("DELETE FROM sensor_histories").Error; err != nil {
-		txPostgres.Rollback()
-		txSqlite.Rollback()
-		return err
-	}
-	if err := txSqlite.Exec("DELETE FROM sensors").Error; err != nil {
-		txPostgres.Rollback()
-		txSqlite.Rollback()
-		return err
-	}
-
-	if err := txPostgres.Commit().Error; err != nil {
-		return err
-	}
-	if err := txSqlite.Commit().Error; err != nil {
-		utils.LogError(
-			fmt.Sprintf(
-				"CRÍTICO: Falha ao commitar limpeza no SQLite após sucesso no PostgreSQL: %v",
-				err,
-			),
-		)
-		return err
-	}
-
-	return nil
+	return r.postgresDB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec("DELETE FROM sensor_histories").Error; err != nil {
+			return err
+		}
+		if err := tx.Exec("DELETE FROM sensors").Error; err != nil {
+			return err
+		}
+		return nil
+	})
 }
