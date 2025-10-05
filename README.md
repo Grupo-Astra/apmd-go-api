@@ -66,7 +66,7 @@ Execute o seguinte comando na raiz do projeto.
 Ele irá construir a imagem da API, baixar a imagem do PostgreSQL e iniciar os serviços.
 
 ```sh
-docker-compose up --build
+docker compose up --build
 ```
 
 A API estará em execução e acessível em `http://localhost:8080`.
@@ -76,7 +76,7 @@ A API estará em execução e acessível em `http://localhost:8080`.
 Para parar e remover os contêineres, a rede e os volumes, use o comando:
 
 ```sh
-docker-compose down
+docker compose down
 ```
 
 ---
