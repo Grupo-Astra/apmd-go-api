@@ -4,14 +4,15 @@ package handlers
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/Grupo-Astra/apmd-go-api/auth"
 	"github.com/Grupo-Astra/apmd-go-api/models"
 	"github.com/Grupo-Astra/apmd-go-api/repositories"
+	"github.com/Grupo-Astra/apmd-go-api/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/lib/pq"
-	"gorm.io/gorm"
 )
 
 // AuthRequest define a estrutura esperada para uma requisição
@@ -54,10 +55,12 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		var pqErr *pq.Error
 		const PG_UNIQUE_CONSTRAINT_VIOLATION string = "23505"
 		if errors.As(err, &pqErr) && pqErr.Code == pq.ErrorCode(PG_UNIQUE_CONSTRAINT_VIOLATION) {
+			utils.LogWarn(fmt.Sprintf("Falha ao registrar usuário duplicado: %s", req.Username))
 			c.JSON(http.StatusConflict, gin.H{"error": "Nome de usuário já existe"})
 			return
 		}
 
+		utils.LogError("Erro de banco de dados ao criar usuário: " + err.Error())
 		c.JSON(
 			http.StatusInternalServerError,
 			gin.H{"error": "Não foi possível criar o usuário"},
@@ -65,6 +68,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
+	utils.LogSuccess(fmt.Sprintf("Novo usuário registrado: %s", newUser.Username))
 	c.JSON(http.StatusCreated, gin.H{"message": "Usuário criado com sucesso"})
 }
 
@@ -78,22 +82,29 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 
 	user, err := h.repo.FindByUsername(req.Username)
-	if err == gorm.ErrRecordNotFound {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Credenciais inválidas"})
-		return
-	}
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao buscar usuário"})
+		utils.LogWarn(fmt.Sprintf(
+			"Tentativa de login falhou para usuário inexistente: %s",
+			req.Username,
+		))
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Credenciais inválidas"})
 		return
 	}
 
 	if !auth.CheckPasswordHash(req.Password, user.Password) {
+		utils.LogWarn(fmt.Sprintf(
+			"Tentativa de login com senha incorreta para o usuário: %s",
+			user.Username,
+		))
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Credenciais inválidas"})
 		return
 	}
 
 	token, err := auth.GenerateToken(user.ID)
 	if err != nil {
+		utils.LogError(
+			"Erro ao gerar token JWT para o usuário " + user.Username + ": " + err.Error(),
+		)
 		c.JSON(
 			http.StatusInternalServerError,
 			gin.H{"error": "Não foi possível gerar o token"},
@@ -101,5 +112,9 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
+	utils.LogInfo(fmt.Sprintf(
+		"Usuário '%s' logado com sucesso.",
+		user.Username,
+	))
 	c.JSON(http.StatusOK, gin.H{"token": token})
 }

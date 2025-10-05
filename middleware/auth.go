@@ -5,11 +5,13 @@ package middleware
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"strings"
 
 	"github.com/Grupo-Astra/apmd-go-api/auth"
+	"github.com/Grupo-Astra/apmd-go-api/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -22,6 +24,10 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
+			utils.LogWarn(fmt.Sprintf(
+				"Acesso negado: Cabeçalho de autorização ausente. IP: %s, Rota: %s",
+				c.ClientIP(), c.Request.URL.Path,
+			))
 			c.AbortWithStatusJSON(
 				http.StatusUnauthorized,
 				gin.H{"error": "Cabeçalho de autorização não encontrado"},
@@ -56,21 +62,33 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 			return []byte(secretKey), nil
 		})
 		if err != nil {
+			errMsg := "Token inválido"
 			if errors.Is(err, jwt.ErrTokenExpired) {
-				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Token expirado"})
-			} else {
-				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Token inválido"})
+				errMsg = "Token expirado"
 			}
+
+			utils.LogWarn(fmt.Sprintf(
+				"Acesso negado: %s. IP: %s, Rota: %s",
+				errMsg, c.ClientIP(), c.Request.URL.Path,
+			))
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": errMsg})
 			return
 		}
 
 		if !token.Valid {
+			utils.LogWarn(fmt.Sprintf(
+				"Acesso negado: Token marcado como inválido. IP: %s, Rota: %s",
+				c.ClientIP(), c.Request.URL.Path,
+			))
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Token inválido"})
 			return
 		}
 
+		utils.LogInfo(fmt.Sprintf(
+			"Token validado para o usuário ID: %d. Acessando rota: %s",
+			claims.UserID, c.Request.URL.Path,
+		))
 		c.Set("userID", claims.UserID)
-
 		c.Next()
 	}
 }
