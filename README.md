@@ -38,7 +38,7 @@ que orquestra o serviço da API e o banco de dados PostgreSQL automaticamente.
 #### 2.1 **Clone o Repositório**
 
 ```sh
-git clone https://github.com/Grupo-Astra/apmd-go-api
+git clone [https://github.com/Grupo-Astra/apmd-go-api](https://github.com/Grupo-Astra/apmd-go-api)
 cd apmd-go-api
 ```
 
@@ -87,15 +87,15 @@ docker compose down
 
 - > **Exemplo de endpoint:** `/api/v2/readings`
 
-As rotas de sensores são versionadas e protegidas.
+Todas as rotas de sensores são versionadas (v2) e protegidas por autenticação.
 
-### 3.1 Autenticação
+### 3.1 Autenticação (Rotas Públicas)
 
 Estas rotas são públicas e servem para gerenciar o acesso à API.
 
 #### **Registrar um Novo Usuário**
 
-- **Endpoint:** `POST /auth/register`
+- **Endpoint:** `POST /api/auth/register`
 - **Descrição:** Cria um novo usuário no sistema. O nome de usuário deve ser único.
 
 **Exemplo de Requisição:**
@@ -117,7 +117,7 @@ Estas rotas são públicas e servem para gerenciar o acesso à API.
 
 #### **Realizar Login**
 
-- **Endpoint:** `POST /auth/login`
+- **Endpoint:** `POST /api/auth/login`
 - **Descrição:** Autentica um usuário com base em suas credenciais e
   retorna um token JWT válido por 2 horas.
 
@@ -138,7 +138,30 @@ Estas rotas são públicas e servem para gerenciar o acesso à API.
 }
 ```
 
-### 3.2 Sensores (v2, Protegido por JWT)
+#### **Redefinir Senha**
+
+- **Endpoint:** `POST /api/auth/reset-password`
+- **Descrição:** Permite a um usuário redefinir sua senha. Para fins deste projeto,
+  ele valida apenas se o `username` fornecido existe.
+
+**Exemplo de Requisição:**
+
+```json
+{
+  "username": "meu_usuario",
+  "newPassword": "minha_nova_senha_forte"
+}
+```
+
+**Exemplo de Resposta (`200 OK`):**
+
+```json
+{
+  "message": "Senha atualizada com sucesso."
+}
+```
+
+### 3.2 Sensores (Rotas Protegidas v2)
 
 Todas as requisições para estes endpoints **devem** incluir
 o token JWT no cabeçalho `Authorization`.
@@ -152,7 +175,7 @@ curl -X GET http://localhost:8080/api/v2/readings \
 
 #### **Listar Todos os Sensores**
 
-- **Endpoint:** `GET /v2/readings`
+- **Endpoint:** `GET /api/v2/readings`
 - **Descrição:** Retorna uma lista com todos os sensores
   cadastrados e seus valores atuais.
 
@@ -185,7 +208,7 @@ curl -X GET http://localhost:8080/api/v2/readings \
 
 #### **Buscar Sensor por ID**
 
-- **Endpoint:** `GET /v2/readings/{id}`
+- **Endpoint:** `GET /api/v2/readings/{id}`
 - **Descrição:** Retorna os detalhes de um sensor específico,
   incluindo seu histórico completo de leituras.
 
@@ -221,7 +244,7 @@ curl -X GET http://localhost:8080/api/v2/readings \
 
 #### **Criar um Novo Sensor**
 
-- **Endpoint:** `POST /v2/readings`
+- **Endpoint:** `POST /api/v2/readings`
 - **Descrição:** Cadastra um novo sensor no sistema.
   A primeira leitura é salva automaticamente no histórico.
 
@@ -250,14 +273,33 @@ curl -X GET http://localhost:8080/api/v2/readings \
 }
 ```
 
-### 3.3. Administrativo
+### 3.3 Usuário (Rotas Protegidas v2)
+
+Rota protegida que retorna informações sobre o usuário autenticado.
+
+#### **Buscar Dados do Usuário Logado**
+
+- **Endpoint:** `GET /api/v2/users/me`
+- **Descrição:** Retorna o nome de usuário e a data de criação do usuário
+  atualmente autenticado (identificado pelo token JWT).
+
+**Exemplo de Resposta (`200 OK`):**
+
+```json
+{
+  "username": "meu_usuario",
+  "createdAt": "2025-10-05T15:00:00Z"
+}
+```
+
+### 3.4 Administrativo (Rota Pública)
 
 Endpoint para gerenciamento do estado da aplicação,
 útil para ambientes de desenvolvimento e teste.
 
 #### **Resetar o Banco de Dados**
 
-- **Endpoint:** `POST /database/reset`
+- **Endpoint:** `POST /api/database/reset`
 - **Descrição:** **Ação destrutiva!** Limpa todos os dados de todas as tabelas
   (Sensores, Históricos e Usuários) e repopula o banco com os sensores iniciais.
 
@@ -393,9 +435,6 @@ As camadas lógicas são:
 - **Versionamento de API (`/v2`):** Ao introduzir uma mudança
   significativa (a obrigatoriedade de autenticação), criamos
   um novo prefixo `/v2` para as rotas protegidas.
-- - **Benefício:** Permite que clientes antigos, que usavam a API
-    sem autenticação, continuem funcionando (apontando para a `v1`),
-    enquanto novos clientes podem usar a `v2`, mais segura.
-- - É uma estratégia fundamental para evoluir APIs sem quebrar integrações
-    existentes, enquanto se preparam para o processo de migração (como nosso
-    frontend dos sprints anteriores).
+- - **Benefício:** Esta estratégia permitiu uma migração segura do frontend.
+    Com a migração concluída, as rotas `v1` legadas foram removidas,
+    e a API agora expõe apenas os endpoints `v2` seguros e modernos.

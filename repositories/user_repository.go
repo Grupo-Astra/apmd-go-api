@@ -13,6 +13,8 @@ type UserRepositoryInterface interface {
 	Create(user *models.User) error
 	FindByUsername(username string) (*models.User, error)
 	ClearAll() error
+	FindByID(userID uint) (*models.User, error)
+	UpdatePassword(userID uint, newPasswordHash string) error
 }
 
 // userRepository é a implementação concreta da UserRepositoryInterface.
@@ -40,4 +42,20 @@ func (r *userRepository) FindByUsername(username string) (*models.User, error) {
 // ClearAll remove todos os registros da tabela de usuários.
 func (r *userRepository) ClearAll() error {
 	return r.db.Exec("DELETE FROM users").Error
+}
+
+// FindByID busca um usuário pelo seu ID.
+func (r *userRepository) FindByID(userID uint) (*models.User, error) {
+	var user models.User
+	err := r.db.First(&user, userID).Error
+	return &user, err
+}
+
+// UpdatePassword atualiza apenas o campo 'password' de um usuário específico pelo ID.
+func (r *userRepository) UpdatePassword(userID uint, newPasswordHash string) error {
+	return r.db.
+		Model(&models.User{}).
+		Where("id = ?", userID).
+		Update("password", newPasswordHash).
+		Error
 }
