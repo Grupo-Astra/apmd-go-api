@@ -42,14 +42,6 @@ func SetupRouter(
 			authRoutes.POST("/reset-password", authHandler.ResetPassword)
 		}
 
-		// Legado -> rotas públicas
-		readingsV1 := api.Group("/readings")
-		{
-			readingsV1.GET("", sensorHandler.GetAllSensors)
-			readingsV1.GET("/:id", sensorHandler.GetSensorByID)
-			readingsV1.POST("", sensorHandler.CreateSensor)
-		}
-
 		dbAdmin := api.Group("/database")
 		{
 			dbAdmin.POST("/reset", databaseHandler.ResetAndSeedDatabase)
