@@ -39,6 +39,7 @@ func SetupRouter(
 		{
 			authRoutes.POST("/register", authHandler.Register)
 			authRoutes.POST("/login", authHandler.Login)
+			authRoutes.POST("/reset-password", authHandler.ResetPassword)
 		}
 
 		// Legado -> rotas públicas
@@ -58,9 +59,16 @@ func SetupRouter(
 		v2.Use(middleware.JWTAuthMiddleware())
 		{
 			readingsV2 := v2.Group("/readings")
-			readingsV2.GET("", sensorHandler.GetAllSensors)
-			readingsV2.GET("/:id", sensorHandler.GetSensorByID)
-			readingsV2.POST("", sensorHandler.CreateSensor)
+			{
+				readingsV2.GET("", sensorHandler.GetAllSensors)
+				readingsV2.GET("/:id", sensorHandler.GetSensorByID)
+				readingsV2.POST("", sensorHandler.CreateSensor)
+			}
+
+			usersV2 := v2.Group("/users")
+			{
+				usersV2.GET("/me", authHandler.GetMe)
+			}
 		}
 	}
 
